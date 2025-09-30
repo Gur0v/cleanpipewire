@@ -2,6 +2,12 @@
 
 set -e
 
+if ! command -v wget >/dev/null 2>&1; then
+    echo "Error: 'wget' command not found."
+    echo "Please install wget: sudo pacman -S wget"
+    exit 1
+fi
+
 if ! command -v rtkitctl >/dev/null 2>&1; then
     echo "Warning: 'rtkitctl' command not found."
     echo "Please install rtkit: sudo pacman -S rtkit"
