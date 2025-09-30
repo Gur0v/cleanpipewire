@@ -40,26 +40,25 @@ tar -xzf "$TARBALL" "pipewire-${PIPEWIRE_VERSION}/src/daemon/pipewire.conf.in" \
 
 if [ -d "$CONFIG_DIR" ]; then
     if [ "$FORCE" = "1" ]; then
+        echo "Removing existing ~/.config/pipewire..."
         rm -rf "$CONFIG_DIR"
+    elif [ -t 0 ]; then
+        read -p "~/.config/pipewire exists. Remove it? (y/n): " answer
+        case "$answer" in
+            [Yy]*)
+                rm -rf "$CONFIG_DIR"
+                ;;
+            *)
+                echo "Aborted."
+                rm -rf "$TMPDIR"
+                exit 1
+                ;;
+        esac
     else
-        if [ -t 0 ]; then
-            read -p "~/.config/pipewire exists. Remove it? (y/n): " answer
-            case "$answer" in
-                [Yy]*)
-                    rm -rf "$CONFIG_DIR"
-                    ;;
-                *)
-                    echo "Aborted."
-                    rm -rf "$TMPDIR"
-                    exit 1
-                    ;;
-            esac
-        else
-            echo "Error: ~/.config/pipewire exists. Run with -f to force overwrite:"
-            echo "  wget -qO- https://raw.githubusercontent.com/Gur0v/cleanpipewire/main/cleanpipewire | sh -s -- -f"
-            rm -rf "$TMPDIR"
-            exit 1
-        fi
+        echo "Error: ~/.config/pipewire exists. Run with -f to force overwrite:"
+        echo "  wget -qO- https://raw.githubusercontent.com/Gur0v/cleanpipewire/main/cleanpipewire | sh -s -- -f"
+        rm -rf "$TMPDIR"
+        exit 1
     fi
 fi
 
