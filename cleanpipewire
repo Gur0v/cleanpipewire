@@ -1,0 +1,82 @@
+#!/bin/sh
+
+set -e
+
+if ! command -v rtkitctl >/dev/null 2>&1; then
+    echo "Warning: 'rtkitctl' command not found."
+    echo "Please install rtkit: sudo pacman -S rtkit"
+    echo "If the package is already installed but the command doesn't exist, you can ignore this message."
+    echo ""
+    read -p "Press Enter to continue or Ctrl+C to exit..."
+fi
+
+TMPDIR="/tmp/cleanpipewire"
+PIPEWIRE_VERSION="1.4.8"
+TARBALL="pipewire-${PIPEWIRE_VERSION}.tar.gz"
+CONFIG_DIR="${HOME}/.config/pipewire"
+
+mkdir -p "$TMPDIR"
+cd "$TMPDIR"
+
+echo "Downloading PipeWire ${PIPEWIRE_VERSION}..."
+wget -q "https://github.com/PipeWire/pipewire/archive/refs/tags/${PIPEWIRE_VERSION}.tar.gz" -O "$TARBALL"
+
+echo "Extracting files..."
+tar -xzf "$TARBALL" "pipewire-${PIPEWIRE_VERSION}/src/daemon/pipewire.conf.in" \
+    "pipewire-${PIPEWIRE_VERSION}/src/daemon/pipewire-pulse.conf.in"
+
+if [ -d "$CONFIG_DIR" ]; then
+    read -p "~/.config/pipewire exists. Remove it? (y/n): " answer
+    case "$answer" in
+        [Yy]*)
+            rm -rf "$CONFIG_DIR"
+            ;;
+        *)
+            echo "Aborted."
+            rm -rf "$TMPDIR"
+            exit 1
+            ;;
+    esac
+fi
+
+mkdir -p "$CONFIG_DIR"
+
+echo "Copying configuration files..."
+cp "pipewire-${PIPEWIRE_VERSION}/src/daemon/pipewire.conf.in" "$CONFIG_DIR/pipewire.conf"
+cp "pipewire-${PIPEWIRE_VERSION}/src/daemon/pipewire-pulse.conf.in" "$CONFIG_DIR/pipewire-pulse.conf"
+
+echo "Modifying pipewire.conf..."
+sed -i 's|^    #default\.clock\.quantum       = 1024$|    default.clock.quantum       = 2048     # https://github.com/Gur0v/cleanpipewire|' \
+    "$CONFIG_DIR/pipewire.conf"
+sed -i 's|^    #default\.clock\.min-quantum   = 32$|    default.clock.min-quantum   = 64       # https://github.com/Gur0v/cleanpipewire|' \
+    "$CONFIG_DIR/pipewire.conf"
+sed -i 's|^    #default\.clock\.max-quantum   = 2048$|    default.clock.max-quantum   = 4096     # https://github.com/Gur0v/cleanpipewire|' \
+    "$CONFIG_DIR/pipewire.conf"
+
+echo "Modifying pipewire-pulse.conf..."
+sed -i 's|^    #pulse\.min\.req          = 128/48000     # 2\.7ms$|    pulse.min.req          = 1024/48000     # https://github.com/Gur0v/cleanpipewire|' \
+    "$CONFIG_DIR/pipewire-pulse.conf"
+sed -i 's|^    #pulse\.min\.frag         = 128/48000     # 2\.7ms$|    pulse.min.frag         = 1024/48000     # https://github.com/Gur0v/cleanpipewire|' \
+    "$CONFIG_DIR/pipewire-pulse.conf"
+sed -i 's|^    #pulse\.min\.quantum      = 128/48000     # 2\.7ms$|    pulse.min.quantum      = 1024/48000     # https://github.com/Gur0v/cleanpipewire|' \
+    "$CONFIG_DIR/pipewire-pulse.conf"
+
+echo "Cleaning up..."
+rm -rf "$TMPDIR"
+
+echo "Done! Configuration files created in ~/.config/pipewire"
+
+if command -v systemctl >/dev/null 2>&1; then
+    read -p "Restart PipeWire services now? (y/n): " answer
+    case "$answer" in
+        [Yy]*)
+            systemctl --user restart pipewire.service pipewire-pulse.service wireplumber.service
+            echo "PipeWire services restarted."
+            ;;
+        *)
+            echo "Please restart PipeWire manually for changes to take effect."
+            ;;
+    esac
+else
+    echo "Restart PipeWire for changes to take effect."
+fi
