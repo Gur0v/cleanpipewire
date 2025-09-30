@@ -17,8 +17,8 @@ if ! command -v rtkitctl >/dev/null 2>&1; then
     echo "Warning: 'rtkitctl' command not found."
     echo "Please install rtkit: sudo pacman -S rtkit"
     echo "If the package is already installed but the command doesn't exist, you can ignore this message."
-    echo ""
     if [ -t 0 ]; then
+        echo ""
         read -p "Press Enter to continue or Ctrl+C to exit..."
     fi
 fi
