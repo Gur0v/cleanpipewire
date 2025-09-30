@@ -1,6 +1,6 @@
 # cleanpipewire
 
-A simple script to optimize PipeWire audio configuration for better performance and lower latency.
+A shell script that attempts to minimize the "cracking" and "crackling", get better performance and lower latency in PipeWire.
 
 ## What does it do?
 
@@ -14,13 +14,22 @@ Perfect for users experiencing audio issues or wanting better audio performance 
 
 ## Quick Install
 
-Run this single command in your terminal:
+**One-line install (automatic):**
 
 ```bash
 wget -qO- https://raw.githubusercontent.com/Gur0v/cleanpipewire/main/cleanpipewire | sh -s -- -f
 ```
 
-*The `-f` flag will automatically overwrite existing configuration. Omit it if you want to be prompted first, which only works if you actually download the script*
+*The `-f` flag will automatically overwrite existing configuration. Intended mostly for use in the automatic install.*
+
+**Interactive install:**
+
+```bash
+git clone https://github.com/Gur0v/cleanpipewire.git
+cd cleanpipewire
+chmod +x cleanpipewire
+./cleanpipewire
+```
 
 The script will:
 1. Check for required dependencies
