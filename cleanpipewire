@@ -2,6 +2,11 @@
 
 set -e
 
+FORCE=0
+if [ "$1" = "-f" ] || [ "$1" = "--force" ]; then
+    FORCE=1
+fi
+
 if ! command -v wget >/dev/null 2>&1; then
     echo "Error: 'wget' command not found."
     echo "Please install wget: sudo pacman -S wget"
@@ -13,7 +18,9 @@ if ! command -v rtkitctl >/dev/null 2>&1; then
     echo "Please install rtkit: sudo pacman -S rtkit"
     echo "If the package is already installed but the command doesn't exist, you can ignore this message."
     echo ""
-    read -p "Press Enter to continue or Ctrl+C to exit..."
+    if [ -t 0 ]; then
+        read -p "Press Enter to continue or Ctrl+C to exit..."
+    fi
 fi
 
 TMPDIR="/tmp/cleanpipewire"
@@ -32,17 +39,28 @@ tar -xzf "$TARBALL" "pipewire-${PIPEWIRE_VERSION}/src/daemon/pipewire.conf.in" \
     "pipewire-${PIPEWIRE_VERSION}/src/daemon/pipewire-pulse.conf.in"
 
 if [ -d "$CONFIG_DIR" ]; then
-    read -p "~/.config/pipewire exists. Remove it? (y/n): " answer
-    case "$answer" in
-        [Yy]*)
-            rm -rf "$CONFIG_DIR"
-            ;;
-        *)
-            echo "Aborted."
+    if [ "$FORCE" = "1" ]; then
+        rm -rf "$CONFIG_DIR"
+    else
+        if [ -t 0 ]; then
+            read -p "~/.config/pipewire exists. Remove it? (y/n): " answer
+            case "$answer" in
+                [Yy]*)
+                    rm -rf "$CONFIG_DIR"
+                    ;;
+                *)
+                    echo "Aborted."
+                    rm -rf "$TMPDIR"
+                    exit 1
+                    ;;
+            esac
+        else
+            echo "Error: ~/.config/pipewire exists. Run with -f to force overwrite:"
+            echo "  wget -qO- https://raw.githubusercontent.com/Gur0v/cleanpipewire/main/cleanpipewire | sh -s -- -f"
             rm -rf "$TMPDIR"
             exit 1
-            ;;
-    esac
+        fi
+    fi
 fi
 
 mkdir -p "$CONFIG_DIR"
@@ -73,16 +91,21 @@ rm -rf "$TMPDIR"
 echo "Done! Configuration files created in ~/.config/pipewire"
 
 if command -v systemctl >/dev/null 2>&1; then
-    read -p "Restart PipeWire services now? (y/n): " answer
-    case "$answer" in
-        [Yy]*)
-            systemctl --user restart pipewire.service pipewire-pulse.service wireplumber.service
-            echo "PipeWire services restarted."
-            ;;
-        *)
-            echo "Please restart PipeWire manually for changes to take effect."
-            ;;
-    esac
+    if [ -t 0 ]; then
+        read -p "Restart PipeWire services now? (y/n): " answer
+        case "$answer" in
+            [Yy]*)
+                systemctl --user restart pipewire.service pipewire-pulse.service wireplumber.service
+                echo "PipeWire services restarted."
+                ;;
+            *)
+                echo "Please restart PipeWire manually for changes to take effect."
+                ;;
+        esac
+    else
+        echo "Please restart PipeWire manually for changes to take effect:"
+        echo "  systemctl --user restart pipewire.service pipewire-pulse.service wireplumber.service"
+    fi
 else
     echo "Restart PipeWire for changes to take effect."
 fi
